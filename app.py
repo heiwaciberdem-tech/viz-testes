@@ -148,6 +148,38 @@ def main():
 
     # 1. Reestruturação do Grafo (PyVis) via Conversation_id
     st.markdown("### Rede Argumentativa Interativa")
+    
+    # --- INÍCIO DA LEGENDA DINÂMICA ---
+    if heatmap_ativo:
+        st.markdown("""
+        <div style='background-color: #F8FAFC; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #E2E8F0;'>
+            <h4 style='margin: 0 0 8px 0; font-size: 14px; color: #0F172A;'>Legenda: Mapa de Calor (Densidade Argumentativa)</h4>
+            <div style='display: flex; gap: 15px; align-items: center; font-size: 13px; color: #334155;'>
+                <div style='display: flex; align-items: center;'><div style='width: 14px; height: 14px; background-color: #E5E7EB; border-radius: 50%; margin-right: 6px;'></div> 0 elementos</div>
+                <div style='display: flex; align-items: center;'><div style='width: 14px; height: 14px; background-color: #FDE68A; border-radius: 50%; margin-right: 6px;'></div> 1 elemento</div>
+                <div style='display: flex; align-items: center;'><div style='width: 14px; height: 14px; background-color: #F59E0B; border-radius: 50%; margin-right: 6px;'></div> 2 elementos</div>
+                <div style='display: flex; align-items: center;'><div style='width: 14px; height: 14px; background-color: #EA580C; border-radius: 50%; margin-right: 6px;'></div> 3 elementos</div>
+                <div style='display: flex; align-items: center;'><div style='width: 14px; height: 14px; background-color: #DC2626; border-radius: 50%; margin-right: 6px;'></div> 4 elementos</div>
+                <div style='display: flex; align-items: center;'><div style='width: 14px; height: 14px; background-color: #7F1D1D; border-radius: 50%; margin-right: 6px;'></div> 5 elementos</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style='background-color: #F8FAFC; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #E2E8F0;'>
+            <h4 style='margin: 0 0 8px 0; font-size: 14px; color: #0F172A;'>Legenda: Modelo de Toulmin</h4>
+            <div style='display: flex; flex-wrap: wrap; gap: 18px; align-items: center; font-size: 13px; color: #334155;'>
+                <div style='display: flex; align-items: center;'><div style='width: 14px; height: 14px; background-color: #1E3A8A; margin-right: 6px;'></div> <b>Conversa</b></div>
+                <div style='display: flex; align-items: center;'><img src='https://ik.imagekit.io/csktgzt59/Heiwa%20IMG/New%20Folder/%C3%ADcones/afir-removebg-preview.png' style='width:16px; height:16px; margin-right:6px;'> Afirmação</div>
+                <div style='display: flex; align-items: center;'><img src='https://ik.imagekit.io/csktgzt59/Heiwa%20IMG/New%20Folder/%C3%ADcones/dado-removebg-preview.png' style='width:16px; height:16px; margin-right:6px;'> Dado</div>
+                <div style='display: flex; align-items: center;'><img src='https://ik.imagekit.io/csktgzt59/Heiwa%20IMG/New%20Folder/%C3%ADcones/download.png' style='width:16px; height:16px; margin-right:6px;'> Justificativa</div>
+                <div style='display: flex; align-items: center;'><img src='https://ik.imagekit.io/csktgzt59/Heiwa%20IMG/New%20Folder/%C3%ADcones/refut-removebg-preview.png' style='width:16px; height:16px; margin-right:6px;'> Refutação</div>
+                <div style='display: flex; align-items: center;'><img src='https://ik.imagekit.io/csktgzt59/Heiwa%20IMG/New%20Folder/%C3%ADcones/download%20(1).png' style='width:16px; height:16px; margin-right:6px;'> Apoio</div>
+                <div style='display: flex; align-items: center;'><img src='https://ik.imagekit.io/csktgzt59/Heiwa%20IMG/New%20Folder/Gemini_Generated_Image_9mm63g9mm63g9mm6-removebg-preview%20(1).png' style='width:16px; height:16px; margin-right:6px;'> Qualificador</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    # --- FIM DA LEGENDA DINÂMICA ---
 
     net = Network(height="650px", width="100%", bgcolor="#FFFFFF", font_color="#101828", directed=True)
 
@@ -182,30 +214,27 @@ def main():
 
     # Agrupar por Conversation_id para formar os Clusters
     for conv_id, group in filtered.groupby(conv_col):
-        # --- CORREÇÃO 1 e 2: Nó central da conversa ---
+        # Nó central da conversa
         node_conv_id = f"conv::{conv_id}"
         
         # Limpa o ID para exibição (evita notação científica e mostra só o final)
         conv_id_str = clean_value(conv_id)
         try:
-            # Se for um número flutuante muito grande, converte para string inteira
             if isinstance(conv_id, (float, int)) or conv_id_str.replace('.', '', 1).isdigit():
                 conv_id_str = str(int(float(conv_id_str)))
         except ValueError:
             pass
         
-        conv_label_curto = f"Conversa\n...{short(conv_id_str[-4:], 10)}" # Mostra só os 4 últimos dígitos
-        
-        # Tooltip limpo (sem tags HTML quebradas)
+        conv_label_curto = f"Conversa\n...{short(conv_id_str[-4:], 10)}"
         conv_title = f"ID da Conversa: {conv_id_str}"
         
         net.add_node(
             node_conv_id, 
             label=conv_label_curto, 
-            shape="box",         # Mudou de hexagon para box (mais legível)
-            color="#1E3A8A",     # Azul escuro elegante
+            shape="box",
+            color="#1E3A8A",
             size=35, 
-            font={"color": "#FFFFFF", "size": 12}, # Texto branco na caixa azul
+            font={"color": "#FFFFFF", "size": 12},
             title=conv_title
         )
 
@@ -227,7 +256,7 @@ def main():
             )
             orig_text = clean_value(row[text_col]) if text_col else ""
 
-            # --- CORREÇÃO 3: Tooltips limpos (sem <b> para evitar que apareçam como texto) ---
+            # Tooltips limpos (sem <b> para evitar que apareçam como texto)
             claim_title = (
                 f"Afirmação:\n{claim_value}"
                 f"\n\nDensidade: {elementos_presentes}/5 elementos"
