@@ -273,7 +273,7 @@ def main():
                         node_id,
                         label=short(value, 15),
                         title=title,
-                        shape="image",S
+                        shape="image",
                         image=img_url,
                         size=20,
                     )
