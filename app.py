@@ -182,15 +182,31 @@ def main():
 
     # Agrupar por Conversation_id para formar os Clusters
     for conv_id, group in filtered.groupby(conv_col):
-        # Nó central da conversa
+        # --- CORREÇÃO 1 e 2: Nó central da conversa ---
         node_conv_id = f"conv::{conv_id}"
+        
+        # Limpa o ID para exibição (evita notação científica e mostra só o final)
+        conv_id_str = clean_value(conv_id)
+        try:
+            # Se for um número flutuante muito grande, converte para string inteira
+            if isinstance(conv_id, (float, int)) or conv_id_str.replace('.', '', 1).isdigit():
+                conv_id_str = str(int(float(conv_id_str)))
+        except ValueError:
+            pass
+        
+        conv_label_curto = f"Conversa\n...{short(conv_id_str[-4:], 10)}" # Mostra só os 4 últimos dígitos
+        
+        # Tooltip limpo (sem tags HTML quebradas)
+        conv_title = f"ID da Conversa: {conv_id_str}"
+        
         net.add_node(
-            node_conv_id,
-            label=f"Conversa\n{short(conv_id, 15)}",
-            shape="hexagon",
-            color="#1F2937",
-            size=45,
-            title=f"<b>ID da Conversa:</b> {conv_id}",
+            node_conv_id, 
+            label=conv_label_curto, 
+            shape="box",         # Mudou de hexagon para box (mais legível)
+            color="#1E3A8A",     # Azul escuro elegante
+            size=35, 
+            font={"color": "#FFFFFF", "size": 12}, # Texto branco na caixa azul
+            title=conv_title
         )
 
         for row_index, row in group.iterrows():
@@ -209,16 +225,16 @@ def main():
                 clean_value(row[find_col(df, reason_keys["claim"])])
                 if find_col(df, reason_keys["claim"]) else ""
             )
-            orig_text = html.escape(clean_value(row[text_col])) if text_col else ""
+            orig_text = clean_value(row[text_col]) if text_col else ""
 
-            # Tooltip com pontuação de densidade
+            # --- CORREÇÃO 3: Tooltips limpos (sem <b> para evitar que apareçam como texto) ---
             claim_title = (
-                f"<b>Afirmação:</b><br>{html.escape(claim_value)}"
-                f"<br><br><b>Densidade:</b> {elementos_presentes}/5 elementos"
-                f"<br><br><b>Texto Original:</b><br>{orig_text}"
+                f"Afirmação:\n{claim_value}"
+                f"\n\nDensidade: {elementos_presentes}/5 elementos"
+                f"\n\nTexto Original:\n{orig_text}"
             )
             if claim_reason:
-                claim_title += f"<br><br><b>Justificativa da Anotação:</b><br>{html.escape(claim_reason)}"
+                claim_title += f"\n\nJustificativa da Anotação:\n{claim_reason}"
 
             # Lógica de alternância do Mapa de Calor
             if heatmap_ativo:
@@ -242,7 +258,7 @@ def main():
                 )
 
             # Ligar Afirmação ao nó central da Conversa
-            net.add_edge(claim_id, node_conv_id, color="#9CA3AF", length=150)
+            net.add_edge(claim_id, node_conv_id, color="#9CA3AF", length=150, width=2 if heatmap_ativo else 1)
 
             for kind, label_name, color, shape, img_url in ELEMENTS[1:]:
                 value = values[kind]
@@ -251,12 +267,12 @@ def main():
 
                 node_id = f"{kind}::{row_index}"
                 reason_col = find_col(df, reason_keys[kind])
-                reason = html.escape(clean_value(row[reason_col])) if reason_col else ""
+                reason = clean_value(row[reason_col]) if reason_col else ""
 
                 # Tooltip HTML
-                title = f"<b>{label_name}:</b><br>{html.escape(value)}"
+                title = f"{label_name}:\n{value}"
                 if reason:
-                    title += f"<br><br><b>Justificativa:</b><br>{reason}"
+                    title += f"\n\nJustificativa:\n{reason}"
 
                 # No modo heatmap, remove imagens dos nós periféricos para não poluir a análise térmica
                 if heatmap_ativo:
@@ -280,7 +296,6 @@ def main():
 
                 # Ligar Elemento Periférico à sua respectiva Afirmação
                 edge_color = "#D97706" if kind == "rebuttal" else "#D0D5DD"
-                # Arestas mais espessas no modo heatmap para reforçar a leitura de densidade
                 edge_width = 2 if heatmap_ativo else 1
                 net.add_edge(
                     node_id,
